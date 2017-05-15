@@ -102,7 +102,7 @@ class LibvirtStorPoolVolumeDriverTestCase(
 
     @mock_storpool
     def test_storpool_config(self):
-        libvirt_driver = vol_sp.LibvirtStorPoolVolumeDriver(self.fake_conn)
+        libvirt_driver = vol_sp.LibvirtStorPoolVolumeDriver(self.fake_host)
         ci = self.conn_info('1')
         ci['data']['device_path'] = '/dev/storpool/something'
         c = libvirt_driver.get_config(ci, self.disk_info)
@@ -111,7 +111,7 @@ class LibvirtStorPoolVolumeDriverTestCase(
 
     @mock_storpool
     def test_storpool_attach_detach(self):
-        libvirt_driver = vol_sp.LibvirtStorPoolVolumeDriver(self.fake_conn)
+        libvirt_driver = vol_sp.LibvirtStorPoolVolumeDriver(self.fake_host)
         self.assertDictEqual({}, test_attached)
 
         ci_1 = self.conn_info('1')
