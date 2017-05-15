@@ -25,8 +25,8 @@ LOG = logging.getLogger(__name__)
 class LibvirtStorPoolVolumeDriver(libvirt_volume.LibvirtBaseVolumeDriver):
     """Driver to attach StorPool volumes to libvirt."""
 
-    def __init__(self, connection):
-        super(LibvirtStorPoolVolumeDriver, self).__init__(connection,
+    def __init__(self, host):
+        super(LibvirtStorPoolVolumeDriver, self).__init__(host,
                                                        is_block_dev=True)
 
         self.connector = connector.InitiatorConnector.factory(
