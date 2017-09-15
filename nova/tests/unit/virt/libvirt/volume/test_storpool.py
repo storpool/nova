@@ -115,23 +115,23 @@ class LibvirtStorPoolVolumeDriverTestCase(
         self.assertDictEqual({}, test_attached)
 
         ci_1 = self.conn_info('1')
-        libvirt_driver.connect_volume(ci_1, self.disk_info)
+        libvirt_driver.connect_volume(ci_1, self.disk_info, mock.sentinel.instance)
         self.assertStorpoolAttached(('1',))
 
         ci_2 = self.conn_info('2')
-        libvirt_driver.connect_volume(ci_2, self.disk_info)
+        libvirt_driver.connect_volume(ci_2, self.disk_info, mock.sentinel.instance)
         self.assertStorpoolAttached(('1', '2'))
 
         self.assertRaises(MockStorPoolExc,
                           libvirt_driver.connect_volume,
-                          ci_2, self.disk_info)
+                          ci_2, self.disk_info, mock.sentinel.instance)
 
-        libvirt_driver.disconnect_volume(ci_1, None)
+        libvirt_driver.disconnect_volume(ci_1, None, mock.sentinel.instance)
         self.assertStorpoolAttached(('2',))
 
         self.assertRaises(MockStorPoolExc,
                           libvirt_driver.disconnect_volume,
-                          ci_1, self.disk_info)
+                          ci_1, self.disk_info, mock.sentinel.instance)
 
-        libvirt_driver.disconnect_volume(ci_2, self.disk_info)
+        libvirt_driver.disconnect_volume(ci_2, self.disk_info, mock.sentinel.instance)
         self.assertDictEqual({}, test_attached)

@@ -41,14 +41,14 @@ class LibvirtStorPoolVolumeDriver(libvirt_volume.LibvirtBaseVolumeDriver):
         conf.source_path = connection_info['data']['device_path']
         return conf
 
-    def connect_volume(self, connection_info, disk_info):
+    def connect_volume(self, connection_info, disk_info, instance):
         LOG.debug("Attaching a StorPool volume: %s.", connection_info)
         device_info = self.connector.connect_volume(connection_info['data'])
         LOG.debug("Attached StorPool volume %s.", device_info)
         connection_info['data']['device_path'] = device_info['path']
         return self.get_config(connection_info, disk_info)
 
-    def disconnect_volume(self, connection_info, disk_dev):
+    def disconnect_volume(self, connection_info, disk_dev, instance):
         LOG.debug("Disconnecting StorPool volume %s (%s)",
                   disk_dev, connection_info)
         self.connector.disconnect_volume(connection_info['data'], None)
