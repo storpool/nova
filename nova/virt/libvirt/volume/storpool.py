@@ -53,3 +53,12 @@ class LibvirtStorPoolVolumeDriver(libvirt_volume.LibvirtBaseVolumeDriver):
                   disk_dev, connection_info, instance=instance)
         self.connector.disconnect_volume(connection_info['data'], None)
         LOG.debug("Disconnected StorPool volume %s", disk_dev, instance=instance)
+
+    def extend_volume(self, connection_info, instance):
+        """Extend the volume."""
+        LOG.debug("Extending StorPool volume %s", connection_info, instance=instance)
+        new_size = self.connector.extend_volume(connection_info['data'])
+        LOG.debug("Extend StorPool Volume %s; new_size=%s",
+                  connection_info['data']['device_path'],
+                  new_size, instance=instance)
+        return new_size
