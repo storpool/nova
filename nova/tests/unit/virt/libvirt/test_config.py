@@ -2462,6 +2462,17 @@ class LibvirtConfigGuestTest(LibvirtConfigBaseTest):
         xml = obj.to_xml()
         self.assertXmlEqual(fake_libvirt_data.FAKE_KVM_GUEST, xml)
 
+    def test_config_kvm_iothread(self):
+        obj = fake_libvirt_data.fake_kvm_guest(iothread_count=2)
+
+        launch_security = config.LibvirtConfigGuestSEVLaunchSecurity()
+        launch_security.cbitpos = 47
+        launch_security.reduced_phys_bits = 1
+        obj.launch_security = launch_security
+
+        xml = obj.to_xml()
+        self.assertXmlEqual(fake_libvirt_data.FAKE_KVM_GUEST_IOTHREAD, xml)
+
     def test_config_uefi(self):
         obj = config.LibvirtConfigGuest()
         obj.virt_type = "kvm"
@@ -2587,6 +2598,29 @@ class LibvirtConfigGuestTest(LibvirtConfigBaseTest):
                 <event enabled="yes" name="cmt"/>
                 <event enabled="yes" name="mbml"/>
               </perf>
+            </domain>""")
+
+    def test_config_iothread_count(self):
+        obj = config.LibvirtConfigGuest()
+        obj.virt_type = "kvm"
+        obj.memory = 100 * units.Mi
+        obj.vcpus = 2
+        obj.name = "iothread"
+        obj.uuid = "b38a3f43-4be2-4046-897f-b67c2f5e0147"
+        obj.os_type = "hvm"
+        obj.iothread_count = 2
+        xml = obj.to_xml()
+
+        self.assertXmlEqual(xml, """
+            <domain type="kvm">
+              <uuid>b38a3f43-4be2-4046-897f-b67c2f5e0147</uuid>
+              <name>iothread</name>
+              <memory>104857600</memory>
+              <vcpu>2</vcpu>
+              <os>
+                <type>hvm</type>
+              </os>
+              <iothreads>2</iothreads>
             </domain>""")
 
     def test_config_machine_type(self):
@@ -3485,10 +3519,23 @@ class LibvirtConfigGuestControllerTest(LibvirtConfigBaseTest):
               <driver iommu="on" />
             </controller>""")
 
+        obj.iothread_count = 2
+
+        xml = obj.to_xml()
+        self.assertXmlEqual(xml, """
+            <controller type='scsi' index='0' model='virtio-scsi'>
+              <driver iommu="on" iothread="1" />
+            </controller>""")
+
     def test_config_guest_usb_host_controller(self):
         obj = config.LibvirtConfigGuestUSBHostController()
         obj.type = 'usb'
         obj.index = 0
+
+        xml = obj.to_xml()
+        self.assertXmlEqual(xml, "<controller type='usb' index='0'/>")
+
+        obj.iothread_count = 2
 
         xml = obj.to_xml()
         self.assertXmlEqual(xml, "<controller type='usb' index='0'/>")

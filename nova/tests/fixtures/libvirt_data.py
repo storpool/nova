@@ -19,7 +19,7 @@ from nova.objects.fields import Architecture
 from nova.virt.libvirt import config
 
 
-def fake_kvm_guest():
+def fake_kvm_guest(iothread_count=0):
     obj = config.LibvirtConfigGuest()
     obj.virt_type = "kvm"
     obj.memory = 100 * units.Mi
@@ -90,12 +90,15 @@ def fake_kvm_guest():
     obj.sysinfo.bios_vendor = "Acme"
     obj.sysinfo.system_version = "1.0.0"
 
+    obj.iothread_count = iothread_count
+
     # obj.devices[0]
     disk = config.LibvirtConfigGuestDisk()
     disk.source_type = "file"
     disk.source_path = "/tmp/disk-img"
     disk.target_dev = "vda"
     disk.target_bus = "virtio"
+    disk.iothread_count = iothread_count
     obj.add_device(disk)
 
     # obj.devices[1]
@@ -105,6 +108,7 @@ def fake_kvm_guest():
     disk.source_path = "/tmp/cdrom-img"
     disk.target_dev = "sda"
     disk.target_bus = "sata"
+    disk.iothread_count = iothread_count
     obj.add_device(disk)
 
     # obj.devices[2]
@@ -158,6 +162,7 @@ def fake_kvm_guest():
     controller.type = 'scsi'
     controller.model = 'virtio-scsi'  # usually set from image meta
     controller.index = 0
+    controller.iothread_count = iothread_count
     obj.add_device(controller)
 
     return obj
@@ -244,7 +249,100 @@ FAKE_KVM_GUEST = """
           <rate period='12' bytes='34'/>
           <backend model='random'>/dev/urandom</backend>
       </rng>
+      <controller type='scsi' index='0' model='virtio-scsi'/>
+    </devices>
+    <launchSecurity type="sev">
+      <policy>0x0033</policy>
+      <cbitpos>47</cbitpos>
+      <reducedPhysBits>1</reducedPhysBits>
+    </launchSecurity>
+  </domain>"""
+
+FAKE_KVM_GUEST_IOTHREAD = """
+  <domain type="kvm">
+    <uuid>b38a3f43-4be2-4046-897f-b67c2f5e0147</uuid>
+    <name>demo</name>
+    <memory>104857600</memory>
+    <memoryBacking>
+      <hugepages>
+        <page size="2048" unit="KiB" nodeset="0-3,5"/>
+        <page size="1048576" unit="KiB" nodeset="4"/>
+      </hugepages>
+    </memoryBacking>
+    <memtune>
+      <hard_limit unit="KiB">496</hard_limit>
+      <soft_limit unit="KiB">672</soft_limit>
+      <swap_hard_limit unit="KiB">1638</swap_hard_limit>
+      <min_guarantee unit="KiB">2970</min_guarantee>
+    </memtune>
+    <numatune>
+      <memory mode="preferred" nodeset="0-3,8"/>
+      <memnode cellid="0" mode="preferred" nodeset="0-1"/>
+      <memnode cellid="1" mode="preferred" nodeset="2-3"/>
+      <memnode cellid="2" mode="preferred" nodeset="8"/>
+    </numatune>
+    <vcpu cpuset="0-1,3-5">2</vcpu>
+    <sysinfo type='smbios'>
+       <bios>
+         <entry name="vendor">Acme</entry>
+       </bios>
+       <system>
+         <entry name="version">1.0.0</entry>
+       </system>
+    </sysinfo>
+    <os>
+      <type>linux</type>
+      <boot dev="hd"/>
+      <boot dev="cdrom"/>
+      <boot dev="fd"/>
+      <smbios mode="sysinfo"/>
+    </os>
+    <features>
+      <acpi/>
+      <apic/>
+      <kvm>
+        <hidden state='on'/>
+      </kvm>
+      <vmcoreinfo/>
+    </features>
+    <cputune>
+      <shares>100</shares>
+      <quota>50000</quota>
+      <period>25000</period>
+    </cputune>
+    <iothreads>2</iothreads>
+    <devices>
+      <disk type="file" device="disk">
+        <driver io="native" iothread="1" />
+        <source file="/tmp/disk-img"/>
+        <target bus="virtio" dev="vda"/>
+      </disk>
+      <disk type="file" device="cdrom">
+        <source file="/tmp/cdrom-img"/>
+        <target bus="sata" dev="sda"/>
+      </disk>
+      <interface type='network'>
+        <mac address='52:54:00:f6:35:8f'/>
+        <model type='virtio'/>
+        <source bridge='virbr0'/>
+      </interface>
+      <memballoon model='virtio'>
+        <stats period='11'/>
+      </memballoon>
+      <input type="mouse" bus="virtio"/>
+      <graphics type="vnc" autoport="yes" keymap="en_US" listen="127.0.0.1"/>
+      <video>
+        <model type='virtio'/>
+      </video>
+      <serial type="file">
+        <source path="/tmp/vm.log"/>
+      </serial>
+      <rng model='virtio'>
+          <rate period='12' bytes='34'/>
+          <backend model='random'>/dev/urandom</backend>
+      </rng>
       <controller type='scsi' index='0' model='virtio-scsi'>
+        <driver iothread='1' />
       </controller>
     </devices>
     <launchSecurity type="sev">

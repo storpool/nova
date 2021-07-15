@@ -51,6 +51,8 @@ class LibvirtBaseVolumeDriver(object):
             # the QEMU backend supports multiple backends, so tell libvirt
             # which one to use
             conf.driver_name = 'qemu'
+            if CONF.libvirt.virt_type == 'kvm':
+                conf.iothread_count = CONF.libvirt.iothread_count
 
         # Support for block size tuning
         data = {}

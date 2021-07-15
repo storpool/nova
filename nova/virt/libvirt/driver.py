@@ -5519,6 +5519,7 @@ class LibvirtDriver(driver.ComputeDriver):
             scsi_controller.type = 'scsi'
             scsi_controller.model = hw_scsi_model
             scsi_controller.index = 0
+            scsi_controller.iothread_count = CONF.libvirt.iothread_count
             return scsi_controller
 
     def _get_host_sysinfo_serial_hardware(self):
@@ -6881,6 +6882,9 @@ class LibvirtDriver(driver.ComputeDriver):
         # the corresponding config file.
         instance.vcpu_model = self._cpu_config_to_vcpu_model(
             guest.cpu, instance.vcpu_model)
+
+        if CONF.libvirt.virt_type == 'kvm':
+            guest.iothread_count = CONF.libvirt.iothread_count
 
         if 'root' in disk_mapping:
             root_device_name = block_device.prepend_dev(

@@ -1094,6 +1094,7 @@ class LibvirtConfigGuestDisk(LibvirtConfigGuestDevice):
         self.mirror = None
         self.encryption = None
         self.alias = None
+        self.iothread_count = 0
 
     def _format_iotune(self, dev):
         iotune = etree.Element("iotune")
@@ -1162,8 +1163,11 @@ class LibvirtConfigGuestDisk(LibvirtConfigGuestDevice):
 
         dev.set("type", self.source_type)
         dev.set("device", self.source_device)
+        use_iothread = (
+            self.iothread_count > 0 and self.target_dev.startswith("vd")
+        )
         if any((self.driver_name, self.driver_format, self.driver_cache,
-                self.driver_discard, self.driver_iommu)):
+                self.driver_discard, self.driver_iommu, use_iothread)):
             drv = etree.Element("driver")
             if self.driver_name is not None:
                 drv.set("name", self.driver_name)
@@ -1177,6 +1181,10 @@ class LibvirtConfigGuestDisk(LibvirtConfigGuestDevice):
                 drv.set("io", self.driver_io)
             if self.driver_iommu:
                 drv.set("iommu", "on")
+            if use_iothread:
+                drv.set("iothread", "1")
+                # Override for testing purposes
+                drv.set("io", "native")
             dev.append(drv)
 
         if self.source_type == "file":
@@ -2118,6 +2126,7 @@ class LibvirtConfigGuestController(LibvirtConfigGuestDevice):
         self.index = None
         self.model = None
         self.driver_iommu = False
+        self.iothread_count = 0
 
     @property
     def uses_virtio(self):
@@ -2135,8 +2144,16 @@ class LibvirtConfigGuestController(LibvirtConfigGuestDevice):
         if self.model:
             controller.set("model", str(self.model))
 
-        if self.driver_iommu:
-            controller.append(etree.Element("driver", iommu="on"))
+        use_iothread = self.model == "virtio-scsi" and self.iothread_count > 0
+        if self.driver_iommu or use_iothread:
+            driver = etree.Element("driver")
+
+            if self.driver_iommu:
+                driver.set("iommu", "on")
+            if use_iothread:
+                driver.set("iothread", "1")
+
+            controller.append(driver)
 
         return controller
 
@@ -2831,6 +2848,7 @@ class LibvirtConfigGuest(LibvirtConfigObject):
         self.idmaps = []
         self.perf_events = []
         self.launch_security = None
+        self.iothread_count = 0
 
     def _format_basic_props(self, root):
         root.append(self._text_node("uuid", self.uuid))
@@ -2927,6 +2945,14 @@ class LibvirtConfigGuest(LibvirtConfigObject):
                 features.append(feat.format_dom())
             root.append(features)
 
+    def _format_iothreads(self, root):
+        if self.virt_type != "kvm" or self.iothread_count == 0:
+            return
+
+        iothreads = etree.Element("iothreads")
+        iothreads.text = str(self.iothread_count)
+        root.append(iothreads)
+
     def _format_devices(self, root):
         if len(self.devices) == 0:
             return
@@ -2977,6 +3003,8 @@ class LibvirtConfigGuest(LibvirtConfigObject):
 
         if self.cpu is not None:
             root.append(self.cpu.format_dom())
+
+        self._format_iothreads(root)
 
         self._format_devices(root)
 

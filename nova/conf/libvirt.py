@@ -219,6 +219,11 @@ Related options:
 * ``virt_type``: If you use ``lxc`` as virt_type it will be treated as a
   single partition image
 """),
+    cfg.IntOpt('iothread_count',
+               default=1,  # FIXME: change this to 0 before merging
+               help="""
+FIXME: write something sensible here
+"""),
     cfg.StrOpt('live_migration_scheme',
                help="""
 URI scheme for live migration used by the source of live migration traffic.
